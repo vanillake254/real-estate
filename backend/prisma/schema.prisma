@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum InvestmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum EarningStatus {
+  PENDING
+  STARTED
+  CREDITED
+  EXPIRED
+}
+
+enum WalletTransactionType {
+  DEPOSIT_APPROVED
+  INVESTMENT_LOCK
+  INVESTMENT_COMPLETE
+  EARNING_CREDIT
+  REFERRAL_BONUS
+  WITHDRAWAL_REQUEST
+  WITHDRAWAL_APPROVED
+  ADJUSTMENT
+}
+
+enum TransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum DepositStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Role {
+  id    String   @id @default(uuid())
+  name  RoleName @unique
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  username               String
+  passwordHash           String
+  phoneNumber            String    @unique
+  roleId                 String
+  role                   Role      @relation(fields: [roleId], references: [id])
+  referralCode           String    @unique
+  referrals              Referral[] @relation("UserReferrals")
+  referralsReceived      Referral[] @relation("UserReferralsReferee")
+  wallet                 Wallet?
+  investments            Investment[]
+  deposits               Deposit[]
+  payouts                Payout[]
+  adminLogs              AdminLog[]
+  depositsApproved       Deposit[] @relation("DepositApprovedBy")
+  payoutsApproved        Payout[]  @relation("PayoutApprovedBy")
+  refreshTokenHash       String?
+  passwordResetRequestedAt DateTime?
+  mustChangePassword     Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Wallet {
+  id              String              @id @default(uuid())
+  userId          String              @unique
+  user            User                @relation(fields: [userId], references: [id])
+  available       Decimal             @default(0) @db.Decimal(18, 2) // withdrawable (earnings/referrals)
+  investable      Decimal             @default(0) @db.Decimal(18, 2) // deposits ready to invest
+  lockedPrincipal Decimal             @default(0) @db.Decimal(18, 2)
+  transactions    WalletTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WalletTransaction {
+  id           String                @id @default(uuid())
+  walletId     String
+  wallet       Wallet                @relation(fields: [walletId], references: [id])
+  type         WalletTransactionType
+  direction    TransactionDirection
+  amount       Decimal               @db.Decimal(18, 2)
+  balanceAfter Decimal               @db.Decimal(18, 2)
+  metadata     Json?
+  createdAt    DateTime              @default(now())
+
+  @@index([walletId, createdAt])
+}
+
+model InvestmentPackage {
+  id           String       @id @default(uuid())
+  name         String
+  price        Decimal      @db.Decimal(18, 2)
+  dailyReturn  Decimal      @db.Decimal(18, 2)
+  durationDays Int
+  isActive     Boolean      @default(true)
+  investments  Investment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Investment {
+  id           String            @id @default(uuid())
+  userId       String
+  user         User              @relation(fields: [userId], references: [id])
+  packageId    String
+  package      InvestmentPackage @relation(fields: [packageId], references: [id])
+  principal    Decimal           @db.Decimal(18, 2)
+  dailyReturn  Decimal           @db.Decimal(18, 2)
+  status       InvestmentStatus  @default(PENDING)
+  startDate    DateTime?
+  endDate      DateTime?
+  lockedAt     DateTime?
+  completedAt  DateTime?
+  totalEarned  Decimal           @default(0) @db.Decimal(18, 2)
+  earnings     Earning[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+model Earning {
+  id           String        @id @default(uuid())
+  investmentId String
+  investment   Investment    @relation(fields: [investmentId], references: [id])
+  dayIndex     Int
+  amount       Decimal       @db.Decimal(18, 2)
+  status       EarningStatus @default(PENDING)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  creditedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([investmentId, dayIndex])
+}
+
+model Referral {
+  id              String   @id @default(uuid())
+  referrerId      String
+  referrer        User     @relation("UserReferrals", fields: [referrerId], references: [id])
+  referredUserId  String
+  referredUser    User     @relation("UserReferralsReferee", fields: [referredUserId], references: [id])
+  investmentId    String?
+  rewardAmount    Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt       DateTime @default(now())
+
+  @@index([referrerId])
+}
+
+model Deposit {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  amount       Decimal        @db.Decimal(18, 2)
+  phoneNumber  String
+  message      String
+  status       DepositStatus  @default(PENDING)
+  approvedById String?
+  approvedBy   User?          @relation("DepositApprovedBy", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model Payout {
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  amount       Decimal       @db.Decimal(18, 2)
+  phoneNumber  String
+  status       PayoutStatus  @default(PENDING)
+  approvedById String?
+  approvedBy   User?         @relation("PayoutApprovedBy", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model AdminLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
