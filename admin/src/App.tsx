@@ -1450,6 +1450,7 @@ function Users() {
   >({});
   const [processing, setProcessing] = useState<string | null>(null);
   const [resetProcessing, setResetProcessing] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -1499,21 +1500,44 @@ function Users() {
     }
   };
 
+  const filteredUsers = users.filter((u) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      u.username?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-white">Users</h1>
           <p className="text-slate-400 mt-1">
             Manage user accounts and balances
           </p>
         </div>
-        <button
-          onClick={fetchUsers}
-          className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/10"
-        >
-          <Icons.Refresh className="w-5 h-5" />
-        </button>
+        <div className="flex flex-col md:flex-row md:items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 min-w-[220px]">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by username or email"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+              <Icons.Search className="w-4 h-4" />
+            </span>
+          </div>
+          <button
+            onClick={fetchUsers}
+            className="self-start md:self-auto p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/10"
+          >
+            <Icons.Refresh className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -1522,7 +1546,7 @@ function Users() {
         </div>
       ) : (
         <div className="space-y-4">
-          {users.map((u) => (
+          {filteredUsers.map((u) => (
             <div
               key={u.id}
               className="rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-5"

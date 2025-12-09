@@ -216,7 +216,15 @@ export function Dashboard() {
         api.get('/investments'),
       ]);
       setWallet(walletRes.data.wallet);
-      setInvestments(investmentsRes.data);
+      // Normalize earnings status so CREDITED from backend is treated as COMPLETED in the UI
+      const normalizedInvestments: Investment[] = investmentsRes.data.map((inv: any) => ({
+        ...inv,
+        earnings: inv.earnings.map((e: any) => ({
+          ...e,
+          status: e.status === 'CREDITED' ? 'COMPLETED' : e.status,
+        })),
+      }));
+      setInvestments(normalizedInvestments);
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Failed to load dashboard data');
     } finally {

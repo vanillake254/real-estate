@@ -239,7 +239,14 @@ export function Investments() {
         api.get('/wallet'),
       ]);
       setPackages(packagesRes.data.filter((p: Package) => p.isActive));
-      setInvestments(investmentsRes.data);
+      const normalizedInvestments: Investment[] = investmentsRes.data.map((inv: any) => ({
+        ...inv,
+        earnings: inv.earnings.map((e: any) => ({
+          ...e,
+          status: e.status === 'CREDITED' ? 'COMPLETED' : e.status,
+        })),
+      }));
+      setInvestments(normalizedInvestments);
       setWallet(walletRes.data.wallet);
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Failed to load data');

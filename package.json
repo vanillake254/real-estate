@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "render-cli": "^0.3.2"
+  }
+}
