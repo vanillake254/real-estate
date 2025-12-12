@@ -129,6 +129,30 @@ function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/login";
   };
 
+  // Auto logout after 3 minutes of inactivity
+  useEffect(() => {
+    let timeoutId: number | undefined;
+
+    const resetTimer = () => {
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        logout();
+      }, 3 * 60 * 1000);
+    };
+
+    const events = ["mousemove", "keydown", "click", "touchstart", "scroll"];
+    events.forEach((evt) => window.addEventListener(evt, resetTimer));
+
+    resetTimer();
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      events.forEach((evt) => window.removeEventListener(evt, resetTimer));
+    };
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{ user, setUser, isAuthenticated: !!user, isLoading, logout }}
@@ -152,6 +176,21 @@ const Icons = {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+      />
+    </svg>
+  ),
+  Key: ({ className = "w-5 h-5" }: { className?: string }) => (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 7a4 4 0 10-7.446 2.032A4 4 0 0011 17h1l2 2 2-2 2 2 2-2-2-2-2 2-2-2h-1a4 4 0 01-3.446-7.968A4 4 0 0015 7z"
       />
     </svg>
   ),
@@ -569,6 +608,7 @@ function Sidebar({
     { path: "/withdrawals", label: "Withdrawals", icon: Icons.Upload },
     { path: "/packages", label: "Packages", icon: Icons.Package },
     { path: "/users", label: "Users", icon: Icons.Users },
+    { path: "/resets", label: "Reset Passwords", icon: Icons.Key },
   ];
 
   return (
@@ -1200,10 +1240,27 @@ function Packages() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this package?")) return;
+    try {
+      await api.delete(`/packages/${id}`);
+      await fetchPackages();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Failed to delete package");
+    }
+  };
+
   const togglePackage = async (id: string, isActive: boolean) => {
     try {
       const pkg = packages.find((p) => p.id === id);
-      await api.put(`/packages/${id}`, { ...pkg, isActive });
+      if (!pkg) return;
+      await api.put(`/packages/${id}`, {
+        name: pkg.name,
+        price: parseFloat(pkg.price),
+        dailyReturn: parseFloat(pkg.dailyReturn),
+        durationDays: pkg.durationDays,
+        isActive,
+      });
       await fetchPackages();
     } catch (e: any) {
       alert(e?.response?.data?.message || "Failed to update package");
@@ -1430,6 +1487,12 @@ function Packages() {
                     >
                       {pkg.isActive ? "Disable" : "Enable"}
                     </button>
+                    <button
+                      onClick={() => handleDelete(pkg.id)}
+                      className="flex-1 py-2 rounded-xl bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-all"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </>
               )}
@@ -1449,7 +1512,6 @@ function Users() {
     Record<string, { avail: string; invest: string }>
   >({});
   const [processing, setProcessing] = useState<string | null>(null);
-  const [resetProcessing, setResetProcessing] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const fetchUsers = useCallback(async () => {
@@ -1467,18 +1529,6 @@ function Users() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-
-  const handleResetPassword = async (userId: string) => {
-    try {
-      setResetProcessing(userId);
-      await api.post(`/users/${userId}/reset-password`);
-      await fetchUsers();
-    } catch (e: any) {
-      alert(e?.response?.data?.message || "Failed to reset password");
-    } finally {
-      setResetProcessing(null);
-    }
-  };
 
   const handleAdjust = async (userId: string) => {
     const adj = adjustments[userId] || { avail: "0", invest: "0" };
@@ -1630,6 +1680,111 @@ function Users() {
                       "Adjust"
                     )}
                   </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ Reset Passwords Page ============
+function ResetPasswords() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [resetProcessing, setResetProcessing] = useState<string | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/users");
+      setUsers(res.data);
+    } catch (e) {
+      console.error("Failed to fetch users:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleResetPassword = async (userId: string) => {
+    try {
+      setResetProcessing(userId);
+      await api.post(`/users/${userId}/reset-password`);
+      await fetchUsers();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Failed to reset password");
+    } finally {
+      setResetProcessing(null);
+    }
+  };
+
+  const filtered = users.filter((u) => u.passwordResetRequestedAt || u.mustChangePassword);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">Reset Passwords</h1>
+          <p className="text-slate-400 mt-1">
+            View users who requested a reset or must change their password
+          </p>
+        </div>
+        <button
+          onClick={fetchUsers}
+          className="self-start md:self-auto p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/10"
+        >
+          <Icons.Refresh className="w-5 h-5" />
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Icons.Spinner className="w-10 h-10 text-indigo-400" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12">
+          <Icons.Key className="w-10 h-10 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-400">No pending password resets.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((u) => (
+            <div
+              key={u.id}
+              className="rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-5"
+            >
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white font-bold">
+                      {u.username?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">{u.username}</p>
+                      <p className="text-sm text-slate-400">{u.email}</p>
+                    </div>
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400 space-y-1">
+                    <p>
+                      Password reset requested: {" "}
+                      {u.passwordResetRequestedAt
+                        ? new Date(u.passwordResetRequestedAt).toLocaleString()
+                        : "No"}
+                    </p>
+                    {u.mustChangePassword && (
+                      <p className="text-amber-400">
+                        User must change password on next login
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleResetPassword(u.id)}
                     disabled={resetProcessing === u.id}
@@ -1710,6 +1865,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Users />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resets"
+            element={
+              <ProtectedRoute>
+                <ResetPasswords />
               </ProtectedRoute>
             }
           />

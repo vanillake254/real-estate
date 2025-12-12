@@ -71,6 +71,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refreshUser();
   }, []);
 
+  // Auto logout after 3 minutes of inactivity
+  useEffect(() => {
+    let timeoutId: number | undefined;
+
+    const resetTimer = () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        logout();
+      }, 3 * 60 * 1000);
+    };
+
+    const events = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
+    events.forEach((evt) => window.addEventListener(evt, resetTimer));
+
+    resetTimer();
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      events.forEach((evt) => window.removeEventListener(evt, resetTimer));
+    };
+  }, [user]);
+
   const value: AuthContextType = {
     user,
     setUser,
