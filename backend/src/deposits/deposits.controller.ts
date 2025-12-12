@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { DepositsService } from './deposits.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { CreateDepositDto } from './dto/create-deposit.dto';
@@ -13,7 +21,12 @@ export class DepositsController {
 
   @Post()
   create(@Req() req: any, @Body() dto: CreateDepositDto) {
-    return this.deposits.create(req.user.userId, dto.amount, dto.phoneNumber, dto.message);
+    return this.deposits.create(
+      req.user.userId,
+      dto.amount,
+      dto.phoneNumber,
+      dto.message,
+    );
   }
 
   @Get()
@@ -42,4 +55,3 @@ export class DepositsController {
     return this.deposits.reject(id, req.user.userId);
   }
 }
-

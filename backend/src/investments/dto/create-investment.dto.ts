@@ -4,4 +4,3 @@ export class CreateInvestmentDto {
   @IsString()
   packageId: string;
 }
-

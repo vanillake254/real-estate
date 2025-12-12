@@ -38,7 +38,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (user?.mustChangePassword && location.pathname !== "/profile") {
-    return <Navigate to="/profile" replace />;
+    return <Navigate to="/profile?reason=mustChangePassword" replace />;
   }
 
   return <Layout>{children}</Layout>;

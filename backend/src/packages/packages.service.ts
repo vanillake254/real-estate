@@ -7,7 +7,9 @@ export class PackagesService {
   constructor(private prisma: PrismaService) {}
 
   list() {
-    return this.prisma.investmentPackage.findMany({ orderBy: { price: 'asc' } });
+    return this.prisma.investmentPackage.findMany({
+      orderBy: { price: 'asc' },
+    });
   }
 
   create(dto: PackageDto) {
@@ -27,4 +29,3 @@ export class PackagesService {
     return this.prisma.investmentPackage.delete({ where: { id } });
   }
 }
-

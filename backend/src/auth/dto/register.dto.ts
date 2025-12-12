@@ -18,4 +18,3 @@ export class RegisterDto {
   @IsString()
   referralCode?: string;
 }
-

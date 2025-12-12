@@ -11,4 +11,3 @@ export class CreateDepositDto {
   @IsString()
   phoneNumber: string;
 }
-

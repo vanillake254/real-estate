@@ -26,7 +26,8 @@ export function Withdraw() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const allowedAmounts = [100, 150, 200, 250, 300, 350];
+  // Suggested quick amounts (multiples of 100)
+  const allowedAmounts = Array.from({ length: 10 }, (_, i) => (i + 1) * 100);
 
   const fetchData = useCallback(async () => {
     try {
@@ -70,8 +71,8 @@ export function Withdraw() {
       return;
     }
 
-    if (!allowedAmounts.includes(withdrawAmount)) {
-      setError('You can only withdraw KES 100, 150, 200, 250, 300 or 350.');
+    if (withdrawAmount % 100 !== 0) {
+      setError('Amount must be a multiple of KES 100 (e.g., 100, 200, 300, ...).');
       return;
     }
 
@@ -100,8 +101,8 @@ export function Withdraw() {
   };
 
   const handleMaxAmount = () => {
-    const maxAllowed = allowedAmounts.filter((v) => v <= availableBalance).pop();
-    if (maxAllowed) {
+    const maxAllowed = Math.floor(availableBalance / 100) * 100;
+    if (maxAllowed >= 100) {
       setAmount(maxAllowed.toString());
     }
   };
@@ -227,8 +228,8 @@ export function Withdraw() {
                 </button>
               </div>
               <p className="text-xs text-slate-500 mt-2">
-                You can only withdraw: {allowedAmounts.join(', ')} KES. Maximum per request is limited by your available balance
-                (current max: KES {availableBalance.toLocaleString()}).
+                You can only withdraw in multiples of KES 100. Maximum per request is limited by your available balance
+                (current max: KES {Math.floor(availableBalance / 100) * 100}).
               </p>
 
               <div className="flex flex-wrap gap-2 mt-3">

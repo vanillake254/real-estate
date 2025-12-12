@@ -7,6 +7,8 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+# Generate Prisma Client (required for TypeScript enums/types)
+RUN npx prisma generate
 RUN npm run build
 
 FROM node:20-alpine AS runner
@@ -17,14 +19,14 @@ ENV NODE_ENV=production
 
 COPY package*.json ./
 RUN npm install --omit=dev
+COPY prisma ./prisma
+RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist
-COPY prisma ./prisma
 
 # Prisma needs OpenSSL
 RUN apk add --no-cache openssl
 
-ENV PORT=3000
-EXPOSE 3000
+EXPOSE 8080
 
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "npx prisma db push || echo 'Prisma DB push failed, starting anyway'; npm run start:prod"]

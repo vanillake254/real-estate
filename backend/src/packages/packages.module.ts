@@ -9,4 +9,3 @@ import { PrismaModule } from '../prisma/prisma.module';
   controllers: [PackagesController],
 })
 export class PackagesModule {}
-

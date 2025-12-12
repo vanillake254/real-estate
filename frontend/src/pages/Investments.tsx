@@ -36,10 +36,12 @@ interface Wallet {
   lockedPrincipal: string;
 }
 
-function PackageCard({ pkg, onDeposit, investableBalance }: {
+function PackageCard({ pkg, onDeposit, investableBalance, disabled = false, processing = false }: {
   pkg: Package;
   onDeposit: () => void;
   investableBalance: number;
+  disabled?: boolean;
+  processing?: boolean;
 }) {
   const price = parseFloat(pkg.price);
   const dailyReturn = parseFloat(pkg.dailyReturn);
@@ -94,15 +96,26 @@ function PackageCard({ pkg, onDeposit, investableBalance }: {
         {canAfford ? (
           <button
             onClick={onDeposit}
-            className="w-full py-3.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
+            disabled={disabled}
+            className="w-full py-3.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Icons.TrendingUp className="w-5 h-5" />
-            Buy Package
+            {processing ? (
+              <>
+                <Icons.Spinner className="w-5 h-5" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Icons.TrendingUp className="w-5 h-5" />
+                Buy Package
+              </>
+            )}
           </button>
         ) : (
           <button
             onClick={onDeposit}
-            className="w-full py-3.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40"
+            disabled={disabled}
+            className="w-full py-3.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Icons.Download className="w-5 h-5" />
             Deposit to Invest
@@ -228,6 +241,7 @@ export function Investments() {
   const [error, setError] = useState<string | null>(null);
   const [startingEarning, setStartingEarning] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'packages' | 'investments'>('packages');
+  const [buyingId, setBuyingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -259,9 +273,26 @@ export function Investments() {
     fetchData();
   }, [fetchData]);
 
-  const handleDeposit = (packageId: string) => {
-    // Navigate to deposit page with the selected package
-    navigate(`/deposit?package=${packageId}`);
+  const handlePackageAction = async (packageId: string) => {
+    if (buyingId) return;
+    const pkg = packages.find((p) => p.id === packageId);
+    const price = pkg ? parseFloat(pkg.price) : Number.POSITIVE_INFINITY;
+
+    if (investableBalance >= price) {
+      try {
+        setBuyingId(packageId);
+        await api.post('/investments', { packageId });
+        await fetchData();
+        setActiveTab('investments');
+      } catch (e: any) {
+        alert(e?.response?.data?.message || 'Failed to create investment');
+      } finally {
+        setBuyingId(null);
+      }
+    } else {
+      // Not enough balance, navigate to deposit page with the selected package
+      navigate(`/deposit?package=${packageId}`);
+    }
   };
 
   const handleStartEarning = async (earningId: string) => {
@@ -361,8 +392,10 @@ export function Investments() {
             <PackageCard
               key={pkg.id}
               pkg={pkg}
-              onDeposit={() => handleDeposit(pkg.id)}
+              onDeposit={() => handlePackageAction(pkg.id)}
               investableBalance={investableBalance}
+              disabled={!!buyingId}
+              processing={buyingId === pkg.id}
             />
           ))}
         </div>

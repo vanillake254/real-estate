@@ -9,7 +9,9 @@ export class WalletController {
 
   @Get()
   async get(@Req() req: any) {
-    const wallet = await this.prisma.wallet.findUnique({ where: { userId: req.user.userId } });
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId: req.user.userId },
+    });
     const transactions = await this.prisma.walletTransaction.findMany({
       where: { walletId: wallet?.id },
       orderBy: { createdAt: 'desc' },
@@ -18,4 +20,3 @@ export class WalletController {
     return { wallet, transactions };
   }
 }
-

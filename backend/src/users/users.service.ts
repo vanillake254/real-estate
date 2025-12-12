@@ -1,8 +1,16 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import * as bcrypt from 'bcryptjs';
-import { Prisma, TransactionDirection, WalletTransactionType } from '@prisma/client';
+import {
+  Prisma,
+  TransactionDirection,
+  WalletTransactionType,
+} from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -62,11 +70,16 @@ export class UsersService {
     if (dto.newPassword) {
       // Current password is required when changing password
       if (!dto.currentPassword) {
-        throw new BadRequestException('Current password is required to change password');
+        throw new BadRequestException(
+          'Current password is required to change password',
+        );
       }
 
       // Verify current password
-      const isValidPassword = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+      const isValidPassword = await bcrypt.compare(
+        dto.currentPassword,
+        user.passwordHash,
+      );
       if (!isValidPassword) {
         throw new UnauthorizedException('Current password is incorrect');
       }
@@ -100,7 +113,12 @@ export class UsersService {
     return users.map(({ passwordHash, refreshTokenHash, ...user }) => user);
   }
 
-  async adjustBalances(userId: string, deltaAvailable: number, deltaInvestable: number, adminId: string) {
+  async adjustBalances(
+    userId: string,
+    deltaAvailable: number,
+    deltaInvestable: number,
+    adminId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({ where: { userId } });
       if (!wallet) throw new BadRequestException('Wallet not found');
@@ -120,7 +138,10 @@ export class UsersService {
                 {
                   walletId: wallet.id,
                   type: WalletTransactionType.ADJUSTMENT,
-                  direction: deltaAvailable > 0 ? TransactionDirection.CREDIT : TransactionDirection.DEBIT,
+                  direction:
+                    deltaAvailable > 0
+                      ? TransactionDirection.CREDIT
+                      : TransactionDirection.DEBIT,
                   amount: Math.abs(deltaAvailable),
                   balanceAfter: updated.available,
                   metadata: { adminId, reason: 'manual_adjust_available' },
@@ -132,7 +153,10 @@ export class UsersService {
                 {
                   walletId: wallet.id,
                   type: WalletTransactionType.ADJUSTMENT,
-                  direction: deltaInvestable > 0 ? TransactionDirection.CREDIT : TransactionDirection.DEBIT,
+                  direction:
+                    deltaInvestable > 0
+                      ? TransactionDirection.CREDIT
+                      : TransactionDirection.DEBIT,
                   amount: Math.abs(deltaInvestable),
                   balanceAfter: updated.investable,
                   metadata: { adminId, reason: 'manual_adjust_investable' },

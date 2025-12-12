@@ -4,4 +4,3 @@ export class StartEarningDto {
   @IsString()
   earningId: string;
 }
-

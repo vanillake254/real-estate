@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { InvestmentsService } from './investments.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { CreateInvestmentDto } from './dto/create-investment.dto';
@@ -39,4 +47,3 @@ export class InvestmentsController {
     return this.investments.adminListInvestments();
   }
 }
-

@@ -5,9 +5,17 @@ import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
 export class DepositsService {
-  constructor(private prisma: PrismaService, private walletService: WalletService) {}
+  constructor(
+    private prisma: PrismaService,
+    private walletService: WalletService,
+  ) {}
 
-  async create(userId: string, amount: number, phoneNumber: string, message: string) {
+  async create(
+    userId: string,
+    amount: number,
+    phoneNumber: string,
+    message: string,
+  ) {
     return this.prisma.deposit.create({
       data: {
         userId,
@@ -19,19 +27,32 @@ export class DepositsService {
   }
 
   async listMine(userId: string) {
-    return this.prisma.deposit.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+    return this.prisma.deposit.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async adminList() {
-    return this.prisma.deposit.findMany({ orderBy: { createdAt: 'desc' }, include: { user: true } });
+    return this.prisma.deposit.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { user: true },
+    });
   }
 
   async approve(depositId: string, adminId: string) {
-    const deposit = await this.prisma.deposit.findUnique({ where: { id: depositId } });
-    if (!deposit || deposit.status !== DepositStatus.PENDING) throw new BadRequestException('Invalid deposit');
+    const deposit = await this.prisma.deposit.findUnique({
+      where: { id: depositId },
+    });
+    if (!deposit || deposit.status !== DepositStatus.PENDING)
+      throw new BadRequestException('Invalid deposit');
     await this.prisma.deposit.update({
       where: { id: depositId },
-      data: { status: DepositStatus.APPROVED, approvedAt: new Date(), approvedById: adminId },
+      data: {
+        status: DepositStatus.APPROVED,
+        approvedAt: new Date(),
+        approvedById: adminId,
+      },
     });
     await this.walletService.creditInvestable(
       deposit.userId,
@@ -42,12 +63,18 @@ export class DepositsService {
   }
 
   async reject(depositId: string, adminId: string) {
-    const deposit = await this.prisma.deposit.findUnique({ where: { id: depositId } });
-    if (!deposit || deposit.status !== DepositStatus.PENDING) throw new BadRequestException('Invalid deposit');
+    const deposit = await this.prisma.deposit.findUnique({
+      where: { id: depositId },
+    });
+    if (!deposit || deposit.status !== DepositStatus.PENDING)
+      throw new BadRequestException('Invalid deposit');
     return this.prisma.deposit.update({
       where: { id: depositId },
-      data: { status: DepositStatus.REJECTED, approvedAt: new Date(), approvedById: adminId },
+      data: {
+        status: DepositStatus.REJECTED,
+        approvedAt: new Date(),
+        approvedById: adminId,
+      },
     });
   }
 }
-

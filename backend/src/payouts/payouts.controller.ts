@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { PayoutsService } from './payouts.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { CreatePayoutDto } from './dto/create-payout.dto';
@@ -42,4 +50,3 @@ export class PayoutsController {
     return this.payouts.reject(id, req.user.userId);
   }
 }
-

@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Prisma, WalletTransactionType, TransactionDirection } from '@prisma/client';
+import {
+  Prisma,
+  WalletTransactionType,
+  TransactionDirection,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -10,7 +14,12 @@ export class WalletService {
     return this.prisma.wallet.findUnique({ where: { userId } });
   }
 
-  async creditAvailable(userId: string, amount: Prisma.Decimal, type: WalletTransactionType, metadata?: any) {
+  async creditAvailable(
+    userId: string,
+    amount: Prisma.Decimal,
+    type: WalletTransactionType,
+    metadata?: any,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.update({
         where: { userId },
@@ -32,11 +41,18 @@ export class WalletService {
     });
   }
 
-  async debitAvailable(userId: string, amount: Prisma.Decimal, type: WalletTransactionType, metadata?: any) {
+  async debitAvailable(
+    userId: string,
+    amount: Prisma.Decimal,
+    type: WalletTransactionType,
+    metadata?: any,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({ where: { userId } });
       if (!wallet) throw new BadRequestException('Wallet not found');
-      if (wallet.available < amount) throw new BadRequestException('Insufficient withdrawable balance');
+      // Use Decimal comparison to avoid string-based comparison issues
+      if (wallet.available.lt(amount))
+        throw new BadRequestException('Insufficient withdrawable balance');
       const updated = await tx.wallet.update({
         where: { userId },
         data: {
@@ -57,7 +73,11 @@ export class WalletService {
     });
   }
 
-  async creditInvestable(userId: string, amount: Prisma.Decimal, metadata?: any) {
+  async creditInvestable(
+    userId: string,
+    amount: Prisma.Decimal,
+    metadata?: any,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.update({
         where: { userId },
@@ -83,7 +103,15 @@ export class WalletService {
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({ where: { userId } });
       if (!wallet) throw new BadRequestException('Wallet not found');
-      if (wallet.investable < amount) throw new BadRequestException('Insufficient investable balance');
+      console.log('LOCK_PRINCIPAL', {
+        userId,
+        investable: wallet.investable.toString(),
+        lockedPrincipal: wallet.lockedPrincipal.toString(),
+        amount: amount.toString(),
+      });
+      // Use Decimal comparison to avoid string-based comparison issues
+      if (wallet.investable.lt(amount))
+        throw new BadRequestException('Insufficient investable balance');
       const updated = await tx.wallet.update({
         where: { userId },
         data: {
@@ -113,4 +141,3 @@ export class WalletService {
     });
   }
 }
-

@@ -12,4 +12,3 @@ import { WalletModule } from '../wallet/wallet.module';
   exports: [InvestmentsService],
 })
 export class InvestmentsModule {}
-

@@ -10,4 +10,3 @@ import { WalletController } from './wallet.controller';
   exports: [WalletService],
 })
 export class WalletModule {}
-

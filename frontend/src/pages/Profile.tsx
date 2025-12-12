@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../api';
 import { Icons } from '../components/Icons';
 import { useAuth } from '../context/AuthContext';
 
 export function Profile() {
   const { user, refreshUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     username: '',
     phoneNumber: '',
@@ -26,6 +28,13 @@ export function Profile() {
       }));
     }
   }, [user]);
+
+  useEffect(() => {
+    const reason = searchParams.get('reason');
+    if (reason === 'mustChangePassword' || user?.mustChangePassword) {
+      setActiveTab('password');
+    }
+  }, [searchParams, user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +80,10 @@ export function Profile() {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
       });
+      await refreshUser();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('reason');
+      setSearchParams(newParams, { replace: true });
       setSuccess('Password changed successfully!');
       setFormData((prev) => ({
         ...prev,
@@ -139,10 +152,22 @@ export function Profile() {
 
         {/* Settings Section */}
         <div className="lg:col-span-2">
+          {(searchParams.get('reason') === 'mustChangePassword' || user?.mustChangePassword) && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 mb-6">
+              <Icons.Info className="w-5 h-5 flex-shrink-0" />
+              <p className="text-sm">You must change your password before navigating to other sections.</p>
+            </div>
+          )}
           {/* Tabs */}
           <div className="flex gap-2 p-1 bg-white/5 rounded-xl w-fit mb-6">
             <button
                 onClick={() => {
+                  const must = user?.mustChangePassword || searchParams.get('reason') === 'mustChangePassword';
+                  if (must) {
+                    setError('You must change your password before accessing profile settings.');
+                    setActiveTab('password');
+                    return;
+                  }
                   setActiveTab('profile');
                   setError(null);
                   setSuccess(null);

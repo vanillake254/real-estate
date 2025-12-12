@@ -1,20 +1,35 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Prisma, EarningStatus, InvestmentStatus, RoleName, WalletTransactionType } from '@prisma/client';
+import {
+  Prisma,
+  EarningStatus,
+  InvestmentStatus,
+  RoleName,
+  WalletTransactionType,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class InvestmentsService {
-  constructor(private prisma: PrismaService, private walletService: WalletService) {}
+  constructor(
+    private prisma: PrismaService,
+    private walletService: WalletService,
+  ) {}
 
   async listPackages() {
-    return this.prisma.investmentPackage.findMany({ where: { isActive: true }, orderBy: { price: 'asc' } });
+    return this.prisma.investmentPackage.findMany({
+      where: { isActive: true },
+      orderBy: { price: 'asc' },
+    });
   }
 
   async createInvestment(userId: string, packageId: string) {
-    const pkg = await this.prisma.investmentPackage.findUnique({ where: { id: packageId } });
-    if (!pkg || !pkg.isActive) throw new BadRequestException('Package unavailable');
+    const pkg = await this.prisma.investmentPackage.findUnique({
+      where: { id: packageId },
+    });
+    if (!pkg || !pkg.isActive)
+      throw new BadRequestException('Package unavailable');
 
     // lock principal
     await this.walletService.lockPrincipal(userId, pkg.price);
@@ -28,7 +43,9 @@ export class InvestmentsService {
           dailyReturn: pkg.dailyReturn,
           status: InvestmentStatus.ACTIVE,
           startDate: new Date(),
-          endDate: new Date(Date.now() + pkg.durationDays * 24 * 60 * 60 * 1000),
+          endDate: new Date(
+            Date.now() + pkg.durationDays * 24 * 60 * 60 * 1000,
+          ),
           lockedAt: new Date(),
         },
       });
@@ -52,11 +69,18 @@ export class InvestmentsService {
       include: { referrer: true },
     });
     if (ref?.referrerId) {
-      const reward = new Prisma.Decimal(pkg.price).mul(new Prisma.Decimal('0.10'));
-      await this.walletService.creditAvailable(ref.referrerId, reward, WalletTransactionType.REFERRAL_BONUS, {
-        fromUserId: userId,
-        investmentId: investment.id,
-      });
+      const reward = new Prisma.Decimal(pkg.price).mul(
+        new Prisma.Decimal('0.10'),
+      );
+      await this.walletService.creditAvailable(
+        ref.referrerId,
+        reward,
+        WalletTransactionType.REFERRAL_BONUS,
+        {
+          fromUserId: userId,
+          investmentId: investment.id,
+        },
+      );
       await this.prisma.referral.update({
         where: { id: ref.id },
         data: { investmentId: investment.id, rewardAmount: reward },
@@ -71,8 +95,10 @@ export class InvestmentsService {
       where: { id: earningId },
       include: { investment: true },
     });
-    if (!earning || earning.investment.userId !== userId) throw new BadRequestException('Not found');
-    if (earning.status !== EarningStatus.PENDING) throw new BadRequestException('Already started');
+    if (!earning || earning.investment.userId !== userId)
+      throw new BadRequestException('Not found');
+    if (earning.status !== EarningStatus.PENDING)
+      throw new BadRequestException('Already started');
 
     // Ensure only one active accrual per investment at a time
     const existingActive = await this.prisma.earning.findFirst({
@@ -83,7 +109,9 @@ export class InvestmentsService {
     });
 
     if (existingActive) {
-      throw new BadRequestException('You already have an earning in progress for this investment. Please wait for it to complete before starting another day.');
+      throw new BadRequestException(
+        'You already have an earning in progress for this investment. Please wait for it to complete before starting another day.',
+      );
     }
 
     return this.prisma.earning.update({
@@ -101,7 +129,11 @@ export class InvestmentsService {
       await this.prisma.$transaction(async (tx) => {
         await tx.earning.update({
           where: { id: earning.id },
-          data: { status: EarningStatus.CREDITED, creditedAt: new Date(), completedAt: new Date() },
+          data: {
+            status: EarningStatus.CREDITED,
+            creditedAt: new Date(),
+            completedAt: new Date(),
+          },
         });
         await tx.investment.update({
           where: { id: earning.investmentId },
@@ -111,7 +143,9 @@ export class InvestmentsService {
         });
       });
       await this.walletService.creditAvailable(
-        (await this.prisma.investment.findUnique({ where: { id: earning.investmentId } }))!.userId,
+        (await this.prisma.investment.findUnique({
+          where: { id: earning.investmentId },
+        }))!.userId,
         earning.amount,
         WalletTransactionType.EARNING_CREDIT,
         { earningId: earning.id },
@@ -132,7 +166,8 @@ export class InvestmentsService {
   }
 
   async adminListInvestments() {
-    return this.prisma.investment.findMany({ include: { user: true, package: true } });
+    return this.prisma.investment.findMany({
+      include: { user: true, package: true },
+    });
   }
 }
-

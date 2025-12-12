@@ -22,8 +22,10 @@ export class SettingsController {
   }
 
   @Post(':key')
-  set(@Param('key') key: string, @Body() body: { value: string; description?: string }) {
+  set(
+    @Param('key') key: string,
+    @Body() body: { value: string; description?: string },
+  ) {
     return this.settings.set(key, body.value, body.description);
   }
 }
-

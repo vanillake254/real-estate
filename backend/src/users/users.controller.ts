@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -36,7 +45,12 @@ export class UsersController {
     @Param('id') id: string,
     @Body() body: { deltaAvailable?: number; deltaInvestable?: number },
   ) {
-    return this.users.adjustBalances(id, body.deltaAvailable ?? 0, body.deltaInvestable ?? 0, req.user.userId);
+    return this.users.adjustBalances(
+      id,
+      body.deltaAvailable ?? 0,
+      body.deltaInvestable ?? 0,
+      req.user.userId,
+    );
   }
 
   @UseGuards(RolesGuard)
@@ -46,4 +60,3 @@ export class UsersController {
     return this.users.resetPasswordToDefault(id, req.user.userId);
   }
 }
-

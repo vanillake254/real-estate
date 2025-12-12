@@ -21,4 +21,3 @@ export class SettingsService {
     return this.prisma.setting.findMany();
   }
 }
-

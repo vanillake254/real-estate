@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { PackagesService } from './packages.service';
 import { PackageDto } from './dto/package.dto';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
@@ -32,4 +41,3 @@ export class PackagesController {
     return this.packagesService.delete(id);
   }
 }
-

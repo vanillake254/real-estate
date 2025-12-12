@@ -239,6 +239,19 @@ export function Dashboard() {
   const handleStartEarning = async (earningId: string) => {
     try {
       setStartingEarning(earningId);
+
+      // Optimistically update local state so ring starts from full 18 hours
+      setInvestments((prev) =>
+        prev.map((inv) => ({
+          ...inv,
+          earnings: inv.earnings.map((e) =>
+            e.id === earningId
+              ? { ...e, status: 'STARTED', startedAt: new Date().toISOString() }
+              : e,
+          ),
+        })),
+      );
+
       await api.post('/investments/start', { earningId });
       await fetchData();
     } catch (e: any) {

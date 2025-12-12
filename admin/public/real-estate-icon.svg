@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Real Estate Admin Panel</title>
+  <desc id="desc">Stylized building shield logo for Real Estate admin panel</desc>
+  <defs>
+    <linearGradient id="grad-admin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="#020617"/>
+  <rect x="72" y="72" width="368" height="368" rx="80" fill="#020617" stroke="url(#grad-admin)" stroke-width="8"/>
+  <g transform="translate(128 120)" fill="none" stroke="url(#grad-admin)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M0 208 L128 80 L256 208" fill="#020617"/>
+    <rect x="64" y="128" width="128" height="128" rx="12" fill="#020617"/>
+    <path d="M128 0 L32 80 L32 224"/>
+    <path d="M128 0 L224 80 L224 224"/>
+    <path d="M128 144 V256"/>
+  </g>
+  <path d="M412 76 L444 92 V124 C444 142 430 162 412 170 C394 162 380 142 380 124 V92 Z" fill="#22c55e" stroke="#bbf7d0" stroke-width="4"/>
+  <text x="412" y="128" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" fill="#022c22">ADM</text>
+</svg>

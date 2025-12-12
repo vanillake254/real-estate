@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Real Estate Investment Platform</title>
+  <desc id="desc">Stylized building logo for Real Estate investment platform</desc>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="#020617"/>
+  <rect x="72" y="72" width="368" height="368" rx="80" fill="#020617" stroke="url(#grad)" stroke-width="8"/>
+  <g transform="translate(128 120)" fill="none" stroke="url(#grad)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M0 208 L128 80 L256 208" fill="#020617"/>
+    <rect x="64" y="128" width="128" height="128" rx="12" fill="#020617"/>
+    <path d="M128 0 L32 80 L32 224"/>
+    <path d="M128 0 L224 80 L224 224"/>
+    <path d="M128 144 V256"/>
+  </g>
+  <circle cx="412" cy="100" r="36" fill="#22c55e"/>
+  <text x="412" y="106" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" fill="#022c22">R</text>
+</svg>
